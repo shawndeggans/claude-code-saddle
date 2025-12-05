@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "claude-code-saddle"
+version = "0.1.0"
+description = "Wraps codebases with AI tooling"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+dependencies = [
+    "tree-sitter-languages",
+    "vulture",
+    "deadcode",
+    "gitpython",
+    "pyyaml",
+    "chromadb",
+    "sentence-transformers",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "bandit",
+    "pre-commit",
+    "pytest",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "B", "A", "C4", "SIM"]
+
+[tool.vulture]
+min_confidence = 80
+paths = ["saddle"]
+
+[tool.bandit]
+targets = ["saddle"]
