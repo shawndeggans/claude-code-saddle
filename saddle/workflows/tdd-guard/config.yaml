@@ -1,0 +1,83 @@
+# TDD Guard Configuration
+# This file configures the test-driven development enforcement system.
+
+# Pattern mapping: source file patterns -> test file patterns
+# When a source file matches a pattern, the corresponding test pattern
+# is used to locate or suggest the test file location.
+test_patterns:
+  # Python patterns
+  "src/**/*.py": "tests/**/test_*.py"
+  "project/src/**/*.py": "project/tests/**/test_*.py"
+  "**/*.py": "tests/test_*.py"
+
+  # JavaScript patterns
+  "src/**/*.js": "tests/**/*.test.js"
+  "src/**/*.ts": "tests/**/*.spec.ts"
+  "lib/**/*.ts": "__tests__/**/*.test.ts"
+
+  # React patterns
+  "src/components/**/*.tsx": "src/components/**/*.test.tsx"
+  "src/components/**/*.jsx": "src/components/**/*.test.jsx"
+
+# Paths excluded from TDD requirements
+# Files matching these patterns will not trigger TDD enforcement.
+excluded_paths:
+  # Configuration and setup files
+  - "**/migrations/**"
+  - "**/config/**"
+  - "**/settings/**"
+  - "**/settings.py"
+  - "**/config.py"
+  - "**/setup.py"
+  - "**/manage.py"
+  - "**/wsgi.py"
+  - "**/asgi.py"
+
+  # Python package files
+  - "**/__init__.py"
+  - "**/conftest.py"
+  - "**/__main__.py"
+
+  # Test files themselves
+  - "**/test_*.py"
+  - "**/*_test.py"
+  - "**/tests/**"
+  - "**/__tests__/**"
+  - "**/*.test.js"
+  - "**/*.test.ts"
+  - "**/*.spec.js"
+  - "**/*.spec.ts"
+
+  # Build and generated files
+  - "**/build/**"
+  - "**/dist/**"
+  - "**/.tox/**"
+  - "**/node_modules/**"
+  - "**/__pycache__/**"
+
+  # Type stubs
+  - "**/*.pyi"
+  - "**/py.typed"
+
+  # Skip marker file
+  - "**/.tdd-skip"
+
+# Strict mode: if true, warnings become blocks
+# In strict mode, any missing test coverage will prevent the file operation.
+# Default: false (warnings are advisory only)
+strict_mode: false
+
+# Custom rules for specific patterns
+# Each rule can specify additional requirements for matching files.
+custom_rules:
+  # API routes require both unit and integration tests
+  # - pattern: "**/api/routes/*.py"
+  #   requires: ["integration_test", "unit_test"]
+
+  # Database models require model tests
+  # - pattern: "**/models/*.py"
+  #   requires: ["model_test"]
+
+  # Security-critical code requires extra scrutiny
+  # - pattern: "**/auth/**"
+  #   strict: true
