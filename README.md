@@ -87,8 +87,14 @@ Add project-specific paths, commands, and guidelines.
 
 | Command | Description |
 |---------|-------------|
-| `/assess <task>` | Create optional planning document for complex tasks |
+| `/assess <task>` | Create planning document for complex tasks |
 | `/cleanup` | Find dead code and stale files |
+| `/index` | Force-regenerate codebase index |
+| `/status` | Quick project health check |
+| `/context` | Dump context for session resume |
+| `/archive <path>` | Move file to archive with metadata |
+| `/restore <path>` | Recover file from archive |
+| `/diff [ref]` | Summarize changes since ref |
 
 ---
 
