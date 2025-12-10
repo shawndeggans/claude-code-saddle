@@ -55,12 +55,24 @@ When enabled, the TDD Guard hook will advise (not block) when test files are mis
 
 | Command | Description |
 |---------|-------------|
-| `/assess <task>` | Create optional planning document for complex tasks |
+| `/assess <task>` | Create planning document for complex tasks |
 | `/cleanup` | Find dead code and stale files |
+| `/index` | Force-regenerate codebase index |
+| `/status` | Quick project health check |
+| `/context` | Dump context for session resume |
+| `/archive <path>` | Move file to archive with metadata |
+| `/restore <path>` | Recover file from archive |
+| `/diff [ref]` | Summarize changes since ref (default: HEAD) |
 
-## Before Large Changes (Recommended)
+### Command Details
 
-For complex tasks, the `/assess` command creates a structured thinking document. Use it when you want to think through scope before coding. Skip it for straightforward work.
+**Planning**: `/assess <task>` creates `project/assessments/<date>-<task>.md` from template. Optional, no enforcement.
+
+**Maintenance**: `/cleanup` and `/index` help keep the codebase healthy. Index auto-updates on commit, but `/index` forces immediate refresh.
+
+**Context**: `/status` and `/context` answer "where am I?" - useful after breaks or in new sessions.
+
+**Archiving**: `/archive` moves files to `.archive/` with metadata. `/restore` brings them back. Non-destructive code removal.
 
 ## Project Structure
 
