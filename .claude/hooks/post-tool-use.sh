@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
 # Post-tool-use hook for Claude Code Saddle
 #
-# Purpose: Verify documentation after file modifications
+# Purpose: Advisory documentation check after file modifications
 #
-# This hook prevents the following failure mode:
-#   - Code is written/modified
-#   - Documentation is not updated
-#   - Knowledge gap accumulates
+# This hook is ADVISORY ONLY - it informs but never blocks.
+# Logs modifications to session audit trail.
 #
-# Also: Updates audit trail for session tracking
+# Exit codes: Always 0 (advisory only)
 
 set -euo pipefail
 
@@ -32,11 +30,7 @@ except Exception:
 " 2>/dev/null || echo "")
 
 # Skip if no file path or not a Python file
-if [ -z "$FILE_PATH" ]; then
-    exit 0
-fi
-
-if [[ ! "$FILE_PATH" == *.py ]]; then
+if [ -z "$FILE_PATH" ] || [[ ! "$FILE_PATH" == *.py ]]; then
     exit 0
 fi
 
@@ -45,14 +39,18 @@ if [[ "$FILE_PATH" =~ test_ ]] || [[ "$FILE_PATH" =~ _test\.py$ ]]; then
     exit 0
 fi
 
-# Run documentation verification (warn only, don't block)
+# Run documentation verification (advisory only)
 DOC_VERIFY="$REPO_ROOT/saddle/workflows/doc-verify/doc_verify.py"
 if [ -f "$DOC_VERIFY" ]; then
-    python3 "$DOC_VERIFY" --files "$FILE_PATH" --format text 2>&1 || true
+    RESULT=$(python3 "$DOC_VERIFY" --files "$FILE_PATH" --format text 2>&1 || true)
+    if [ -n "$RESULT" ] && [[ "$RESULT" != *"All checks passed"* ]]; then
+        echo "[DOC ADVISORY] $RESULT"
+    fi
 fi
 
 # Log to session audit trail
 SESSION_LOG="$REPO_ROOT/.session-log.txt"
 echo "$(date -Iseconds) - Modified: $FILE_PATH" >> "$SESSION_LOG" 2>/dev/null || true
 
+# Always exit 0 - advisory only
 exit 0
