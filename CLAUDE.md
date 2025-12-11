@@ -35,6 +35,25 @@ A lightweight control layer for AI-assisted development.
 - **Prefer simple solutions** over clever ones
   *Rationale: Code is read more often than written; clarity wins*
 
+### Automatic Behaviors
+
+Claude follows these patterns without being asked:
+
+- **Index-first lookup**: Check `saddle/index/CODEBASE.md` before exploring filesystem
+  *Rationale: The index is authoritative; saves time and context*
+
+- **Auto-test after code changes**: Run tests after writing implementation code, fix failures before moving on
+  *Rationale: Immediate feedback catches issues before they compound*
+
+- **Pre-flight planning**: State approach before complex (3+ file) changes, ask for confirmation
+  *Rationale: Alignment upfront prevents wasted effort*
+
+- **Context management**: Suggest `/clear` after completing distinct tasks
+  *Rationale: Fresh context prevents drift in long sessions*
+
+- **Cleanup awareness**: Note dead code or unused imports during refactoring
+  *Rationale: Opportunistic cleanup keeps codebase healthy*
+
 ### Infrastructure
 
 - **Infrastructure changes go through IaC**, not direct CLI commands

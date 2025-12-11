@@ -28,11 +28,12 @@ source .venv/bin/activate
 | Feature | Behavior |
 |---------|----------|
 | **Codebase Index** | Auto-generates on commit. Query `saddle/index/CODEBASE.md` for structure. |
+| **Automatic Behaviors** | Claude self-manages: index checks, test runs, planning, cleanup suggestions. |
 | **TDD Advisory** | Opt-in per project. Warns (never blocks) when test files are missing. |
 | **Doc Verification** | Advises on missing docstrings and CHANGELOG entries. |
 | **Dead Code Detection** | Finds unused code and stale files via `/cleanup` command. |
 
-**Advisory philosophy**: Hooks provide guidance but trust developer judgment. No hard blocks.
+**Advisory philosophy**: Hooks provide guidance but trust developer judgment. No hard blocks. Claude handles operational tasks automatically so humans focus on decisions.
 
 ---
 
