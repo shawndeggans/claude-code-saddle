@@ -32,6 +32,7 @@ source .venv/bin/activate
 | **TDD Advisory** | Opt-in per project. Warns (never blocks) when test files are missing. |
 | **Doc Verification** | Advises on missing docstrings and CHANGELOG entries. |
 | **Dead Code Detection** | Finds unused code and stale files via `/cleanup` command. |
+| **Expert Systems** | Domain-specific MCP servers with embedded LLMs. Delegate specialized work via consult, execute, review, troubleshoot tools. |
 
 **Advisory philosophy**: Hooks provide guidance but trust developer judgment. No hard blocks. Claude handles operational tasks automatically so humans focus on decisions.
 
@@ -47,6 +48,7 @@ claude-code-saddle/
     src/
     tests/
   saddle/
+    experts/              # Expert systems (MCP servers with domain knowledge)
     index/                # Auto-generated codebase map
     workflows/            # TDD Guard, doc-verify (advisory)
     cleanup/              # Dead code and archive tools
@@ -145,6 +147,23 @@ python saddle/cleanup/stale_file_tracker.py project/ --threshold 180
 # Archive unused code
 python saddle/cleanup/archive_manager.py archive src/old.py --reason "deprecated"
 ```
+
+### Expert Systems
+
+Domain-specific MCP servers with embedded LLMs for specialized guidance.
+
+```bash
+# Create an expert
+./scripts/init-expert.sh databricks "Databricks platform and Asset Bundles"
+
+# Test and start
+./scripts/test-expert.sh databricks
+./scripts/start-expert.sh databricks
+```
+
+**Available tools** (per expert): `consult`, `execute`, `review`, `troubleshoot`
+
+See `saddle/experts/README.md` for full documentation.
 
 ---
 

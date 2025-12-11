@@ -1,0 +1,35 @@
+expert:
+  name: "{{EXPERT_NAME}}"
+  domain: "{{DOMAIN_DESCRIPTION}}"
+  version: "0.1.0"
+
+llm:
+  provider: "anthropic"
+  model: "claude-sonnet-4-20250514"
+  max_tokens: 4096
+  temperature: 0.2
+
+knowledge:
+  core_files:
+    - "knowledge/core/*.md"
+    - "SKILL.md"
+  reference_files:
+    - "knowledge/reference/*.md"
+  org_patterns:
+    - "knowledge/org-patterns/*.md"
+
+boundaries:
+  refuse_patterns:
+    # Add patterns for queries outside this expert's domain
+    # - "kubernetes"
+    # - "terraform"
+  redirect_to:
+    main_agent: "Return to main agent for questions outside {{DOMAIN_DESCRIPTION}}"
+
+logging:
+  decision_log: "knowledge/decision-log/"
+  log_level: "INFO"
+
+server:
+  port: {{PORT}}
+  host: "localhost"
