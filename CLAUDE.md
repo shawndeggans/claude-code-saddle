@@ -103,6 +103,7 @@ claude-code-saddle/
     src/                  # Source code
     tests/                # Test files
   saddle/
+    experts/              # Expert systems (MCP servers with domain knowledge)
     workflows/            # Advisory systems (TDD Guard, doc-verify)
     index/                # Auto-generated codebase indexes
     cleanup/              # Dead code and staleness detection
@@ -110,6 +111,29 @@ claude-code-saddle/
   scripts/                  # Setup and utility scripts
   .claude/                  # Claude Code hook configurations
 ```
+
+## Expert Systems
+
+Expert systems provide deep domain knowledge for specific tools and technologies. They run as MCP servers with embedded LLMs, maintaining their own context and knowledge bases.
+
+**When to use an expert**: When you need domain-specific guidance, execution, review, or troubleshooting for a tool/technology that has a corresponding expert. Don't attempt to handle the domain yourself - delegate to the expert.
+
+**When to create an expert**: When you find yourself repeatedly needing domain knowledge that clutters the main context, or when the main agent keeps forgetting how to work with a specific tool.
+
+**Available tools** (per expert):
+- `consult` - Ask questions about the domain
+- `execute` - Perform domain-specific actions
+- `review` - Review configurations, scripts, or plans
+- `troubleshoot` - Diagnose and fix errors
+
+**Creating experts**:
+```bash
+./scripts/init-expert.sh <name> "<domain description>"
+./scripts/test-expert.sh <name>
+./scripts/start-expert.sh <name>
+```
+
+See `saddle/experts/README.md` for full documentation on creating and using experts.
 
 ## Advisory Hooks
 
