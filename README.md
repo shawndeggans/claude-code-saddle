@@ -152,11 +152,14 @@ python saddle/cleanup/archive_manager.py archive src/old.py --reason "deprecated
 
 Domain-specific MCP servers with embedded LLMs for specialized guidance.
 
-```bash
-# Create an expert
-./scripts/init-expert.sh databricks "Databricks platform and Asset Bundles"
+**Available expert**: `requirements` - Transforms project descriptions into Behavior Contracts (structured specs with Outcome, Boundaries, Behaviors, Verification).
 
-# Test and start
+```bash
+# Start the requirements expert
+./scripts/start-expert.sh requirements
+
+# Create a new expert
+./scripts/init-expert.sh databricks "Databricks platform and Asset Bundles"
 ./scripts/test-expert.sh databricks
 ./scripts/start-expert.sh databricks
 ```

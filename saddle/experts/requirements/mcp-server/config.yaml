@@ -1,0 +1,49 @@
+expert:
+  name: "requirements"
+  domain: "Behavior Contract generation from project descriptions"
+  version: "0.1.0"
+
+llm:
+  provider: "anthropic"
+  model: "claude-sonnet-4-20250514"
+  max_tokens: 4096
+  temperature: 0.2
+
+knowledge:
+  core_files:
+    - "knowledge/core/*.md"
+    - "SKILL.md"
+  reference_files:
+    - "knowledge/reference/*.md"
+  org_patterns:
+    - "knowledge/org-patterns/*.md"
+
+boundaries:
+  refuse_patterns:
+    # Technical implementation decisions
+    - "which database"
+    - "what framework"
+    - "architecture pattern"
+    - "how to implement"
+    - "code for"
+    - "write code"
+    # Timeline and effort
+    - "how long"
+    - "estimate"
+    - "timeline"
+    - "schedule"
+    # Project management
+    - "sprint"
+    - "backlog"
+    - "prioritize tasks"
+  redirect_to:
+    main_agent: "Return to main agent for implementation decisions"
+    project_management: "Consult project management for timeline and prioritization"
+
+logging:
+  decision_log: "knowledge/decision-log/"
+  log_level: "INFO"
+
+server:
+  port: 3001
+  host: "localhost"

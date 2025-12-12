@@ -1018,6 +1018,69 @@ Would you like me to create an assessment for deprecating and replacing it?
 
 Same answer, fraction of the tokens, no file reads.
 
+### Use Case 6: Requirements-First Development
+
+**Scenario**: User has a vague idea that needs to be structured before implementation.
+
+```
+You: I need something that watches our Confluence space and notifies us when docs change
+
+Claude: This is a requirements gathering task. Let me consult the requirements expert.
+[Calls requirements.consult with the description]
+
+Requirements Expert responds: {
+  "answer": "This is a partial specification. I can identify the core intent but need clarification on several points.",
+  "confidence": "medium",
+  "clarifying_questions": [
+    "Is this modifying an existing system or building something new?",
+    "What should trigger a notification - any change, or specific types of changes?",
+    "Who should receive notifications - individuals, channels, or roles?",
+    "What notification method - email, Slack, webhook, or other?"
+  ],
+  "partial_contract": null
+}
+
+Claude: The requirements expert has some clarifying questions:
+1. Is this new or modifying something existing?
+2. What changes should trigger notifications?
+3. Who should receive them?
+4. How should they be delivered?
+
+You: New system. Any doc changes. Send to a Slack channel. Just our engineering space.
+
+Claude: [Calls requirements.consult with answers]
+
+Requirements Expert responds: {
+  "answer": "Now I have enough to draft a Behavior Contract.",
+  "confidence": "high",
+  "clarifying_questions": [],
+  "partial_contract": "## Behavior Contract: Confluence Change Notifier\n\n### Outcome\nEngineering team receives timely Slack notifications..."
+}
+
+Claude: [Calls requirements.execute to generate full contract]
+
+Requirements Expert responds: {
+  "status": "success",
+  "result": "# Behavior Contract: Confluence Change Notifier\n\n## Outcome\n...",
+  "open_questions": ["Polling frequency vs webhook - affects architecture"]
+}
+
+Claude: Here's the Behavior Contract. One open question remains about polling vs webhooks.
+[Shows contract with Outcome, Boundaries, Behaviors, Verification sections]
+
+Shall I proceed with implementation, or do you want to address the open question first?
+```
+
+**Key workflow**:
+1. User provides vague description
+2. Main agent delegates to requirements expert
+3. Expert generates clarifying questions (prioritized by impact)
+4. User answers questions iteratively
+5. Expert produces Behavior Contract
+6. Main agent proceeds with implementation using contract as spec
+
+The requirements expert ensures nothing gets built until success criteria are defined.
+
 ---
 
 ## Appendix: Quick Reference
