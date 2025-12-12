@@ -126,6 +126,12 @@ Expert systems provide deep domain knowledge for specific tools and technologies
 - `review` - Review configurations, scripts, or plans
 - `troubleshoot` - Diagnose and fix errors
 
+**Available experts**:
+
+| Expert | Domain | When to Use |
+|--------|--------|-------------|
+| `requirements` | Behavior Contract generation | Before implementation, when requirements are vague or incomplete |
+
 **Creating experts**:
 ```bash
 ./scripts/init-expert.sh <name> "<domain description>"

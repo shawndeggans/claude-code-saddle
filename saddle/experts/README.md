@@ -12,6 +12,27 @@ Expert systems are MCP servers with embedded LLMs that provide deep domain knowl
 
 **Use an expert when**: You need domain-specific guidance, decisions, or troubleshooting that requires accumulated knowledge and judgment.
 
+## Available Experts
+
+| Expert | Domain | Port | Documentation |
+|--------|--------|------|---------------|
+| **requirements** | Behavior Contract generation from project descriptions | 3001 | `saddle/experts/requirements/README.md` |
+
+### Requirements Expert
+
+Transforms vague or partial project descriptions into structured Behavior Contracts ready for implementation.
+
+**Use for**:
+- Analyzing project descriptions for completeness
+- Generating prioritized clarifying questions
+- Producing Behavior Contract drafts (Outcome, Boundaries, Behaviors, Verification)
+- Reviewing existing PRDs or user stories
+- Diagnosing why requirements are blocking implementation
+
+**Invoke**: `requirements.consult`, `requirements.execute`, `requirements.review`, `requirements.troubleshoot`
+
+See `saddle/experts/requirements/README.md` for full documentation.
+
 ## When to Create an Expert
 
 Signs you need an expert system:

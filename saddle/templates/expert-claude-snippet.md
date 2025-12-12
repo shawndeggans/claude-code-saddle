@@ -31,7 +31,30 @@ questions, tasks, and decisions. **Do not attempt to handle these domains yourse
 
 ---
 
-## Example: Databricks Expert
+## Example: Requirements Expert (Available)
+
+```markdown
+### Requirements Expert
+
+**Domain**: Behavior Contract generation from project descriptions
+
+**Invoke**: Use the `requirements` MCP tools (consult, execute, review, troubleshoot)
+
+**Use for**:
+- Transforming vague ideas into structured Behavior Contracts
+- Generating clarifying questions for incomplete requirements
+- Reviewing existing PRDs or user stories for completeness
+- Diagnosing why requirements are blocking implementation
+
+**Do NOT use for**:
+- Implementation decisions (architecture, technology choices)
+- Timeline or effort estimation
+- Task breakdown or sprint planning
+```
+
+---
+
+## Example: Databricks Expert (Hypothetical)
 
 ```markdown
 ### Databricks Expert
