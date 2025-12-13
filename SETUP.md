@@ -55,9 +55,12 @@ claude-code-saddle/
 ├── CLAUDE.local.md                # Personal overrides (gitignored)
 ├── .claude/
 │   ├── settings.json              # Claude Code configuration
+│   ├── commands/                  # Slash commands (/saddle, /saddle-on, etc.)
 │   └── hooks/
-│       ├── pre-tool-use.sh        # TDD enforcement hook
-│       ├── post-tool-use.sh       # Documentation verification
+│       ├── pre-tool-use.py        # TDD enforcement (exit 2 blocks)
+│       ├── post-tool-use.py       # Logging and advisory
+│       ├── user-prompt-submit.py  # Context injection
+│       ├── stop.py                # Test verification
 │       └── session-start.sh       # Context refresh on session start
 ├── saddle/
 │   ├── rules/
@@ -188,10 +191,10 @@ Create the TDD Guard enforcement system in saddle/workflows/tdd-guard/. This sho
    - For implementation files (*.py, *.js, *.ts excluding tests):
      - Checks if corresponding test file exists
      - If test file doesn't exist: BLOCK and output instructions to create test first
-     - If test file exists but has no test for the function being modified: WARN
      - If tests exist: ALLOW
-   - Returns exit code 0 (allow), 1 (block), or 2 (warn)
+   - Returns exit code 0 (allow) or 2 (block with stderr to Claude)
    - Outputs structured JSON with action, reason, and guidance
+   - Exit code 2 is critical: it's the only code that blocks AND feeds stderr to Claude
 
 2. config.yaml - Configuration file specifying:
    - test_patterns: mapping of source patterns to test patterns
@@ -345,7 +348,7 @@ Create the Claude Code hook system in .claude/. This should:
         "hooks": [
           {
             "type": "command",
-            "command": "python saddle/workflows/tdd-guard/tdd_guard.py \"$FILE_PATH\" \"$ACTION\""
+            "command": "python3 .claude/hooks/pre-tool-use.py"
           }
         ]
       }
@@ -356,30 +359,45 @@ Create the Claude Code hook system in .claude/. This should:
         "hooks": [
           {
             "type": "command",
-            "command": "python saddle/workflows/doc-verify/doc_verify.py --check-staged"
+            "command": "python3 .claude/hooks/post-tool-use.py"
           }
         ]
       }
     ],
-    "SessionStart": [
+    "UserPromptSubmit": [
       {
-        "matcher": "startup|resume|clear",
         "hooks": [
           {
             "type": "command",
-            "command": "cat saddle/rules/universal.md && cat saddle/index/CODEBASE.md | head -100"
+            "command": "python3 .claude/hooks/user-prompt-submit.py"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/stop.py"
           }
         ]
       }
     ]
   },
   "permissions": {
-    "allow_shell": true,
-    "allow_file_write": true,
-    "require_approval_for": ["rm -rf", "git push", "terraform apply", "kubectl delete"]
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Bash(rm -rf *)"
+    ]
   }
 }
 ```
+
+**Exit code behavior**:
+- Exit 0: Allow operation
+- Exit 2: Block operation AND feed stderr to Claude (critical for feedback)
 
 2. hooks/pre-tool-use.sh - Shell wrapper that:
    - Receives tool name, file path, and action
@@ -692,26 +710,32 @@ Hooks are mechanical enforcement. They don't rely on Claude remembering rules—
 User: "Write the authentication module"
 Claude: [Attempts to write src/auth.py]
   ↓
-PreToolUse Hook fires
+PreToolUse Hook fires (pre-tool-use.py)
   ↓
-tdd_guard.py checks: Does tests/test_auth.py exist?
+Hook checks if TDD enabled, then calls tdd_guard.py
   ↓
-NO → Hook returns exit code 1, blocks write
+NO test file → Hook returns exit code 2, stderr goes to Claude
   ↓
-Claude receives: "BLOCKED: Test file required. Create tests/test_auth.py first."
+Claude receives: "TDD VIOLATION: No test file found for auth.py"
   ↓
 Claude: "I need to write the tests first. Creating tests/test_auth.py..."
 ```
 
-This works even when Claude has "forgotten" TDD requirements deep in a session.
+**Key insight**: Exit code 2 is the only mechanism that both blocks the operation AND feeds stderr back to Claude for feedback. This works even when Claude has "forgotten" TDD requirements deep in a session.
 
 ### Hook Types
 
 | Hook | Trigger | Use Case |
 |------|---------|----------|
-| **PreToolUse** | Before tool execution | Block non-compliant actions |
-| **PostToolUse** | After tool execution | Verify postconditions, update state |
+| **PreToolUse** | Before tool execution | Block non-compliant actions (exit 2 blocks + stderr to Claude) |
+| **PostToolUse** | After tool execution | Logging, advisory checks |
+| **UserPromptSubmit** | Before prompt processing | Inject requirements into Claude's context (stdout) |
+| **Stop** | Before task completion | Verify tests pass (when TDD enabled) |
 | **SessionStart** | On /clear or new session | Refresh context, show current state |
+
+**Exit code reference**:
+- 0: Allow operation
+- 2: Block operation AND feed stderr to Claude
 
 ### Customizing Hooks
 
