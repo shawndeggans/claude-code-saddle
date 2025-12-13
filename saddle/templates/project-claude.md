@@ -12,7 +12,11 @@ Configure optional enforcement features:
 TDD: disabled
 ```
 
-Set `TDD: enabled` to activate TDD Guard advisory checks.
+Set `TDD: enabled` to activate TDD Guard enforcement. When enabled:
+- Pre-tool-use hook **blocks** writes to implementation files without test files
+- Stop hook verifies tests pass before allowing task completion
+
+Use `/saddle-on` to enable or `/saddle-off` to disable.
 
 ## Key Paths
 

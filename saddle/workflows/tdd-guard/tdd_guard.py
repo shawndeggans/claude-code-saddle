@@ -8,8 +8,10 @@ tests are missing.
 
 Exit Codes:
     0: Allow - proceed with operation
-    1: Block - operation prevented, must create tests first
-    2: Warn - operation allowed but tests incomplete
+    2: Block - operation prevented, must create tests first (stderr fed to Claude)
+
+Note: Exit code 2 is used for blocking because it's the only code that both
+blocks the operation AND feeds stderr to Claude for feedback.
 """
 
 from __future__ import annotations
@@ -28,10 +30,10 @@ import yaml
 class GuardResult(NamedTuple):
     """Result of TDD guard check."""
 
-    action: str  # "allow", "block", "warn"
+    action: str  # "allow", "block"
     reason: str
     guidance: str
-    exit_code: int  # 0=allow, 1=block, 2=warn
+    exit_code: int  # 0=allow, 2=block
 
 
 @dataclass
@@ -125,8 +127,11 @@ def is_excluded(file_path: Path, config: TDDConfig) -> bool:
     for pattern in config.excluded_paths:
         if fnmatch(file_str, pattern):
             return True
-        # Also check just the filename
-        if fnmatch(file_path.name, pattern.split("/")[-1]):
+        # Also check just the filename against the pattern's filename portion
+        # Only do this for patterns that end with a filename (not **/ or */)
+        pattern_suffix = pattern.split("/")[-1]
+        is_filename_pattern = pattern_suffix and pattern_suffix not in ("**", "*")
+        if is_filename_pattern and fnmatch(file_path.name, pattern_suffix):
             return True
     return False
 
@@ -158,10 +163,7 @@ def is_test_file(file_path: Path) -> bool:
         return True
 
     # In a tests directory
-    if "tests" in file_path.parts or "__tests__" in file_path.parts:
-        return True
-
-    return False
+    return "tests" in file_path.parts or "__tests__" in file_path.parts
 
 
 def find_test_file(source_path: Path, config: TDDConfig) -> Path | None:
@@ -176,8 +178,11 @@ def find_test_file(source_path: Path, config: TDDConfig) -> Path | None:
     """
     source_str = str(source_path)
 
-    for source_pattern, test_pattern in config.test_patterns.items():
-        if fnmatch(source_str, source_pattern) or fnmatch(source_path.name, source_pattern.split("/")[-1]):
+    for source_pattern, _test_pattern in config.test_patterns.items():
+        pattern_suffix = source_pattern.split("/")[-1]
+        matches_full = fnmatch(source_str, source_pattern)
+        matches_name = fnmatch(source_path.name, pattern_suffix)
+        if matches_full or matches_name:
             # Construct potential test file path
             stem = source_path.stem
             suffix = source_path.suffix
@@ -248,10 +253,10 @@ def _extract_python_functions(file_path: Path) -> list[str]:
 
     functions = []
     for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
-            # Skip private functions for TDD check
-            if not node.name.startswith("_"):
-                functions.append(node.name)
+        is_func = isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef)
+        # Skip private functions for TDD check
+        if is_func and not node.name.startswith("_"):
+            functions.append(node.name)
 
     return functions
 
@@ -400,27 +405,35 @@ def run_guard(
     if test_file is None:
         # No test file exists
         stem = path.stem
-        test_name = f"test_{stem}.py" if path.suffix == ".py" else f"{stem}.test{path.suffix}"
+        if path.suffix == ".py":
+            test_name = f"test_{stem}.py"
+        else:
+            test_name = f"{stem}.test{path.suffix}"
 
+        guidance = (
+            f"TDD requires tests first. Create a test file "
+            f"(e.g., {test_name}) before implementing."
+        )
         return GuardResult(
             action="block",
             reason=f"No test file found for {path.name}",
-            guidance=f"TDD requires tests first. Create a test file (e.g., {test_name}) before implementing.",
-            exit_code=1,
+            guidance=guidance,
+            exit_code=2,
         )
 
     # Test file exists, check coverage
     has_coverage, uncovered = check_function_coverage(path, test_file)
 
-    if not has_coverage and uncovered:
-        warn_or_block = "block" if config.strict_mode else "warn"
-        exit_code = 1 if config.strict_mode else 2
-
+    # In strict mode, block on incomplete coverage
+    # Otherwise allow but don't enforce coverage
+    if not has_coverage and uncovered and config.strict_mode:
+        uncovered_names = ", ".join(uncovered[:3])
+        guidance = f"Add tests for these functions in {test_file.name}."
         return GuardResult(
-            action=warn_or_block,
-            reason=f"Missing test coverage for: {', '.join(uncovered[:3])}",
-            guidance=f"Add tests for these functions in {test_file.name} before proceeding.",
-            exit_code=exit_code,
+            action="block",
+            reason=f"Missing test coverage for: {uncovered_names}",
+            guidance=guidance,
+            exit_code=2,
         )
 
     return GuardResult(
@@ -439,8 +452,7 @@ def main() -> int:
         epilog="""
 Exit Codes:
   0 - Allow: Proceed with operation
-  1 - Block: Operation prevented, create tests first
-  2 - Warn: Operation allowed but tests are incomplete
+  2 - Block: Operation prevented, create tests first (stderr fed to Claude)
 
 Examples:
   tdd_guard.py src/auth.py write
@@ -481,13 +493,10 @@ Examples:
         if result.action == "allow":
             print(f"[ALLOW] {result.reason}")
         elif result.action == "block":
-            print(f"[BLOCK] {result.reason}")
+            # Output to stderr so it goes to Claude when exit code is 2
+            print(f"[BLOCK] {result.reason}", file=sys.stderr)
             if result.guidance:
-                print(f"  -> {result.guidance}")
-        elif result.action == "warn":
-            print(f"[WARN] {result.reason}")
-            if result.guidance:
-                print(f"  -> {result.guidance}")
+                print(f"  -> {result.guidance}", file=sys.stderr)
 
     return result.exit_code
 

@@ -68,12 +68,15 @@ TDD enforcement is **disabled by default**. To enable TDD Guard for a project, a
 TDD: enabled
 ```
 
-When enabled, the TDD Guard hook will advise (not block) when test files are missing.
+When enabled, the TDD Guard hook will **BLOCK** writes to implementation files that don't have corresponding test files. Use `/saddle-on` to enable or `/saddle-off` to disable.
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
+| `/saddle` | Show saddle status and available commands |
+| `/saddle-on` | Enable TDD enforcement |
+| `/saddle-off` | Disable TDD enforcement |
 | `/assess <task>` | Create planning document for complex tasks |
 | `/cleanup` | Find dead code and stale files |
 | `/index` | Force-regenerate codebase index |
@@ -141,15 +144,33 @@ Expert systems provide deep domain knowledge for specific tools and technologies
 
 See `saddle/experts/README.md` for full documentation on creating and using experts.
 
-## Advisory Hooks
+## Hook System
 
-The saddle uses **advisory hooks** that inform rather than block:
+The saddle uses **hooks** that can either inform or enforce:
 
-- **Pre-tool-use**: Checks for test files (when TDD enabled), outputs guidance
-- **Post-tool-use**: Checks documentation, logs to session audit trail
-- **Session start**: Shows git status and index location
+### Enforcement Hooks (when TDD enabled)
 
-Hooks provide guidance but trust developer judgment. If a hook raises a concern, it will explain why - you decide whether to act on it.
+- **Pre-tool-use**: **BLOCKS** writes to implementation files without test files
+  - Exit code 2 blocks the operation and feeds feedback to Claude
+  - Only active when `TDD: enabled` is in `project/CLAUDE.md`
+
+- **Stop**: Verifies tests pass before allowing task completion
+  - Only active when TDD is enabled
+
+### Informational Hooks (always active)
+
+- **User-prompt-submit**: Injects engineering requirements into context
+- **Post-tool-use**: Logs modifications to session audit trail
+- **Session-start**: Shows git status and index location
+
+### Exit Code Reference
+
+| Code | Behavior |
+|------|----------|
+| 0 | Allow operation |
+| 2 | **Block** operation and feed stderr to Claude |
+
+When a hook blocks an operation, it provides clear guidance on what to do next.
 
 ## Project-Specific Rules
 

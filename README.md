@@ -29,12 +29,12 @@ source .venv/bin/activate
 |---------|----------|
 | **Codebase Index** | Auto-generates on commit. Query `saddle/index/CODEBASE.md` for structure. |
 | **Automatic Behaviors** | Claude self-manages: index checks, test runs, planning, cleanup suggestions. |
-| **TDD Advisory** | Opt-in per project. Warns (never blocks) when test files are missing. |
+| **TDD Enforcement** | Opt-in per project. **Blocks** writes to implementation files when test files are missing. |
 | **Doc Verification** | Advises on missing docstrings and CHANGELOG entries. |
 | **Dead Code Detection** | Finds unused code and stale files via `/cleanup` command. |
 | **Expert Systems** | Domain-specific MCP servers with embedded LLMs. Delegate specialized work via consult, execute, review, troubleshoot tools. |
 
-**Advisory philosophy**: Hooks provide guidance but trust developer judgment. No hard blocks. Claude handles operational tasks automatically so humans focus on decisions.
+**Enforcement philosophy**: When TDD is enabled, hooks **block** non-compliant operations using exit code 2, which feeds stderr directly to Claude. This provides mechanical enforcement that works even in long sessions. Use `/saddle-on` to enable, `/saddle-off` to disable.
 
 ---
 
@@ -72,7 +72,7 @@ TDD is **disabled by default**. To enable, add to `project/CLAUDE.md`:
 TDD: enabled
 ```
 
-When enabled, the TDD Guard hook will output advisories when test files are missing.
+When enabled, the TDD Guard hook will **block** writes to implementation files that don't have corresponding test files. The Stop hook will also verify tests pass before allowing task completion.
 
 ### Project-Specific Rules
 
@@ -90,6 +90,9 @@ Add project-specific paths, commands, and guidelines.
 
 | Command | Description |
 |---------|-------------|
+| `/saddle` | Show saddle status and available commands |
+| `/saddle-on` | Enable TDD enforcement |
+| `/saddle-off` | Disable TDD enforcement |
 | `/assess <task>` | Create planning document for complex tasks |
 | `/cleanup` | Find dead code and stale files |
 | `/index` | Force-regenerate codebase index |
@@ -116,16 +119,18 @@ python saddle/index/generator/index_generator.py --full
 - `dependency-graph.json` - Module import relationships
 - `CODEBASE.md` - Human-readable summary
 
-### TDD Guard (Advisory)
+### TDD Guard (Enforcement)
 
-Checks for test files when writing implementation code.
+Checks for test files when writing implementation code. When TDD is enabled, **blocks** writes to files without tests.
 
 ```bash
 # Manual check
 python saddle/workflows/tdd-guard/tdd_guard.py src/auth.py write --json
 ```
 
-**Exit codes:** Always advisory (exit 0). Outputs guidance when tests missing.
+**Exit codes:**
+- 0: Allow - proceed with operation
+- 2: Block - operation prevented (stderr fed to Claude)
 
 ### Doc Verify (Advisory)
 
@@ -172,13 +177,17 @@ See `saddle/experts/README.md` for full documentation.
 
 ## Hooks
 
-All hooks are **advisory only** - they inform but never block operations.
+Hooks are Python scripts that can **inform or enforce** depending on configuration.
 
 | Hook | Trigger | Purpose |
 |------|---------|---------|
 | `session-start.sh` | Session start | Shows index location and git status |
-| `pre-tool-use.sh` | Before Write/Edit | TDD advisory (when enabled) |
-| `post-tool-use.sh` | After Write/Edit | Documentation advisory |
+| `pre-tool-use.py` | Before Write/Edit | TDD enforcement (when enabled) - **blocks** without tests |
+| `post-tool-use.py` | After Write/Edit | Session logging and documentation advisory |
+| `user-prompt-submit.py` | Before prompt | Injects engineering requirements into context |
+| `stop.py` | Before completion | Verifies tests pass (when TDD enabled) |
+
+**Exit code 2** blocks operations AND feeds stderr to Claude for feedback.
 
 ---
 
@@ -207,9 +216,9 @@ Configured in `.pre-commit-config.yaml`:
 
 ## Philosophy
 
-### Advisory Over Blocking
+### Mechanical Enforcement
 
-The saddle trusts developer judgment. Hooks output guidance when they detect issues, but they never prevent operations. You decide whether to act on the advice.
+When TDD is enabled, hooks provide **mechanical enforcement** that works regardless of session length. Exit code 2 blocks operations and feeds stderr to Claude. This prevents the common failure mode where AI agents "forget" rules after long sessions.
 
 ### Auto-Generated Context
 
