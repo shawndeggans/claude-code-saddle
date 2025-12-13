@@ -162,7 +162,23 @@ This validates:
 ./scripts/start-expert.sh <expert-name>
 ```
 
-### 7. Register in project CLAUDE.md
+### 7. Register in .mcp.json
+
+Expert MCP servers must be registered in `.mcp.json` at the project root (NOT in `.claude/settings.json`):
+
+```json
+{
+  "mcpServers": {
+    "databricks-expert": {
+      "type": "stdio",
+      "command": "python3",
+      "args": ["saddle/experts/databricks/mcp-server/server.py"]
+    }
+  }
+}
+```
+
+### 8. Register in project CLAUDE.md
 
 Add the expert to your project's CLAUDE.md so the main agent knows to use it.
 See `saddle/templates/expert-claude-snippet.md` for the format.

@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/pre-tool-use.sh"
+            "command": "python3 .claude/hooks/pre-tool-use.py"
           }
         ]
       }
@@ -17,7 +17,27 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/post-tool-use.sh"
+            "command": "python3 .claude/hooks/post-tool-use.py"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/user-prompt-submit.py"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/stop.py"
           }
         ]
       }
@@ -47,6 +67,8 @@
       "Read(*)"
     ],
     "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
       "Bash(rm -rf *)",
       "Bash(rm -r *)",
       "Bash(git push --force *)",
