@@ -5,8 +5,8 @@ A lightweight control layer for AI-assisted development.
 ## Quick Reference
 
 - **Your code**: `project/`
-- **Codebase map**: `saddle/index/CODEBASE.md` (auto-generated on commit)
 - **Project rules**: `project/CLAUDE.md`
+- **Context recovery**: Automatic via hooks (no manual action needed)
 
 ## Guidelines
 
@@ -26,9 +26,6 @@ A lightweight control layer for AI-assisted development.
 
 ### Working Style
 
-- **Check `saddle/index/CODEBASE.md`** before asking where things are
-  *Rationale: The index is authoritative and auto-updated; saves exploration time*
-
 - **Read existing code** before proposing changes
   *Rationale: Understanding context prevents accidental breakage and maintains consistency*
 
@@ -38,9 +35,6 @@ A lightweight control layer for AI-assisted development.
 ### Automatic Behaviors
 
 Claude follows these patterns without being asked:
-
-- **Index-first lookup**: Check `saddle/index/CODEBASE.md` before exploring filesystem
-  *Rationale: The index is authoritative; saves time and context*
 
 - **Auto-test after code changes**: Run tests after writing implementation code, fix failures before moving on
   *Rationale: Immediate feedback catches issues before they compound*
@@ -77,9 +71,8 @@ When enabled, the TDD Guard hook will **BLOCK** writes to implementation files t
 | `/saddle` | Show saddle status and available commands |
 | `/saddle-on` | Enable TDD enforcement |
 | `/saddle-off` | Disable TDD enforcement |
-| `/assess <task>` | Create planning document for complex tasks |
+| `/assess <task>` | Plan and structure a task before implementation |
 | `/cleanup` | Find dead code and stale files |
-| `/index` | Force-regenerate codebase index |
 | `/status` | Quick project health check |
 | `/context` | Dump context for session resume |
 | `/archive <path>` | Move file to archive with metadata |
@@ -88,9 +81,9 @@ When enabled, the TDD Guard hook will **BLOCK** writes to implementation files t
 
 ### Command Details
 
-**Planning**: `/assess <task>` creates `project/assessments/<date>-<task>.md` from template. Optional, no enforcement.
+**Planning**: `/assess <task>` helps analyze scope, identify affected files, and outline implementation steps. Optional, no enforcement.
 
-**Maintenance**: `/cleanup` and `/index` help keep the codebase healthy. Index auto-updates on commit, but `/index` forces immediate refresh.
+**Maintenance**: `/cleanup` helps keep the codebase healthy by finding dead code.
 
 **Context**: `/status` and `/context` answer "where am I?" - useful after breaks or in new sessions.
 
@@ -108,9 +101,8 @@ claude-code-saddle/
   saddle/
     experts/              # Expert systems (MCP servers with domain knowledge)
     workflows/            # Advisory systems (TDD Guard, doc-verify)
-    index/                # Auto-generated codebase indexes
+    sessions/             # Auto-managed context snapshots
     cleanup/              # Dead code and staleness detection
-    templates/            # Assessment template
   scripts/                  # Setup and utility scripts
   .claude/                  # Claude Code hook configurations
 ```
@@ -159,9 +151,11 @@ The saddle uses **hooks** that can either inform or enforce:
 
 ### Informational Hooks (always active)
 
+- **Session-start**: Injects context snapshot (if exists) and git status
+- **Pre-compact**: Saves context snapshot before `/clear` or auto-compaction
 - **User-prompt-submit**: Injects engineering requirements into context
 - **Post-tool-use**: Logs modifications to session audit trail
-- **Session-start**: Shows git status and index location
+- **Stop**: Updates context snapshot on clean exit
 
 ### Exit Code Reference
 

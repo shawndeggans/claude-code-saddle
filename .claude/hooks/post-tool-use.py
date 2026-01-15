@@ -14,14 +14,19 @@ Exit Codes:
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
 
 
-def get_repo_root() -> Path:
-    """Get the repository root directory."""
+def get_project_dir() -> Path:
+    """Get the project directory from environment or git."""
+    env_dir = os.environ.get("CLAUDE_PROJECT_DIR")
+    if env_dir:
+        return Path(env_dir)
+
     try:
         result = subprocess.run(
             ["git", "rev-parse", "--show-toplevel"],
@@ -44,9 +49,9 @@ def is_test_file(file_path: str) -> bool:
     )
 
 
-def log_modification(repo_root: Path, file_path: str) -> None:
+def log_modification(project_dir: Path, file_path: str) -> None:
     """Log modification to session audit trail."""
-    session_log = repo_root / ".session-log.txt"
+    session_log = project_dir / ".session-log.txt"
     try:
         timestamp = datetime.now().isoformat(timespec="seconds")
         with open(session_log, "a", encoding="utf-8") as f:
@@ -55,9 +60,9 @@ def log_modification(repo_root: Path, file_path: str) -> None:
         pass  # Silently ignore logging failures
 
 
-def run_doc_verify(repo_root: Path, file_path: str) -> str | None:
+def run_doc_verify(project_dir: Path, file_path: str) -> str | None:
     """Run documentation verification and return result if issues found."""
-    doc_verify = repo_root / "saddle" / "workflows" / "doc-verify" / "doc_verify.py"
+    doc_verify = project_dir / "saddle" / "workflows" / "doc-verify" / "doc_verify.py"
 
     if not doc_verify.exists():
         return None
@@ -67,7 +72,7 @@ def run_doc_verify(repo_root: Path, file_path: str) -> str | None:
             [sys.executable, str(doc_verify), "--files", file_path, "--format", "text"],
             capture_output=True,
             text=True,
-            cwd=str(repo_root),
+            cwd=str(project_dir),
             timeout=10,
         )
         output = result.stdout.strip()
@@ -94,10 +99,10 @@ def main() -> int:
     if not file_path:
         return 0
 
-    repo_root = get_repo_root()
+    project_dir = get_project_dir()
 
     # Log the modification
-    log_modification(repo_root, file_path)
+    log_modification(project_dir, file_path)
 
     # Skip non-Python files for doc verification
     if not file_path.endswith(".py"):
@@ -108,10 +113,16 @@ def main() -> int:
         return 0
 
     # Run documentation verification (advisory)
-    doc_result = run_doc_verify(repo_root, file_path)
+    doc_result = run_doc_verify(project_dir, file_path)
     if doc_result:
-        # Output to stdout as advisory message
-        print(f"[DOC ADVISORY] {doc_result}")
+        # Output structured JSON
+        output = {
+            "hookSpecificOutput": {
+                "hookEventName": "PostToolUse",
+                "additionalContext": f"[DOC ADVISORY] {doc_result}",
+            }
+        }
+        print(json.dumps(output))
 
     # Always exit 0 - this is an informational hook
     return 0
