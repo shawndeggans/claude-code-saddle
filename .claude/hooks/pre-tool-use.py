@@ -12,14 +12,19 @@ Exit Codes:
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
 from pathlib import Path
 
 
-def get_repo_root() -> Path:
-    """Get the repository root directory."""
+def get_project_dir() -> Path:
+    """Get the project directory from environment or git."""
+    env_dir = os.environ.get("CLAUDE_PROJECT_DIR")
+    if env_dir:
+        return Path(env_dir)
+
     try:
         result = subprocess.run(
             ["git", "rev-parse", "--show-toplevel"],
@@ -32,9 +37,9 @@ def get_repo_root() -> Path:
         return Path.cwd()
 
 
-def is_tdd_enabled(repo_root: Path) -> bool:
+def is_tdd_enabled(project_dir: Path) -> bool:
     """Check if TDD enforcement is enabled in project/CLAUDE.md."""
-    project_claude = repo_root / "project" / "CLAUDE.md"
+    project_claude = project_dir / "project" / "CLAUDE.md"
     if not project_claude.exists():
         return False
 
@@ -72,9 +77,9 @@ def is_in_project_dir(file_path: str) -> bool:
     return file_path.startswith("project/") or "/project/" in file_path
 
 
-def run_tdd_guard(repo_root: Path, file_path: str) -> dict:
+def run_tdd_guard(project_dir: Path, file_path: str) -> dict:
     """Run TDD Guard and return the result."""
-    tdd_guard = repo_root / "saddle" / "workflows" / "tdd-guard" / "tdd_guard.py"
+    tdd_guard = project_dir / "saddle" / "workflows" / "tdd-guard" / "tdd_guard.py"
 
     if not tdd_guard.exists():
         return {"action": "allow", "reason": "TDD Guard not found"}
@@ -84,7 +89,7 @@ def run_tdd_guard(repo_root: Path, file_path: str) -> dict:
             [sys.executable, str(tdd_guard), file_path, "write", "--json"],
             capture_output=True,
             text=True,
-            cwd=str(repo_root),
+            cwd=str(project_dir),
             timeout=10,
         )
         return json.loads(result.stdout)
@@ -110,10 +115,10 @@ def main() -> int:
     if not file_path:
         return 0
 
-    repo_root = get_repo_root()
+    project_dir = get_project_dir()
 
     # Check if TDD is enabled
-    if not is_tdd_enabled(repo_root):
+    if not is_tdd_enabled(project_dir):
         return 0
 
     # Skip files outside project/ directory
@@ -125,7 +130,7 @@ def main() -> int:
         return 0
 
     # Run TDD Guard
-    result = run_tdd_guard(repo_root, file_path)
+    result = run_tdd_guard(project_dir, file_path)
     action = result.get("action", "allow")
 
     if action == "block":

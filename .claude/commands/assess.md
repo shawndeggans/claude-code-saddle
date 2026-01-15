@@ -1,34 +1,26 @@
 # Assess Task: $ARGUMENTS
 
-Create a structured planning document for this task.
+Help plan and structure this task before implementation.
 
 ## Instructions
 
-1. Create the assessments directory if it doesn't exist:
-   ```bash
-   mkdir -p project/assessments
-   ```
+Analyze the task and provide:
 
-2. Generate filename from task description:
-   - Use today's date: YYYY-MM-DD format
-   - Slugify the task name (lowercase, hyphens for spaces)
-   - Example: `project/assessments/2024-01-15-user-authentication-with-oauth.md`
+1. **Understanding**: Restate the task in your own words to confirm understanding
 
-3. Copy the template and populate it:
-   - Read `saddle/templates/assessment.md`
-   - Replace `[TASK_NAME]` with: $ARGUMENTS
-   - Write to the generated filename
+2. **Scope Analysis**:
+   - Which files will likely need changes?
+   - What existing patterns should be followed?
+   - Are there related tests to consider?
 
-4. Output the file path so the user can edit it:
-   ```
-   Assessment created: project/assessments/<filename>.md
-   ```
+3. **Approach**: Outline the implementation steps in order
 
-5. Optionally, help the user fill in key sections by analyzing the codebase for:
-   - Files likely to be modified
-   - Existing patterns to follow
-   - Related test files
+4. **Risks**: Identify potential issues or edge cases
 
-## No Enforcement
+5. **Questions**: List anything that needs clarification before starting
 
-This is purely for planning. The assessment is optional and has no gates.
+## Notes
+
+- This is purely for planning - no enforcement gates
+- Optionally save the assessment to `project/assessments/` if the user wants a record
+- Keep it concise - this should take minutes, not hours

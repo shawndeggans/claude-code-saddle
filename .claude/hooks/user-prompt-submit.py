@@ -12,14 +12,19 @@ Exit Codes:
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
 from pathlib import Path
 
 
-def get_repo_root() -> Path:
-    """Get the repository root directory."""
+def get_project_dir() -> Path:
+    """Get the project directory from environment or git."""
+    env_dir = os.environ.get("CLAUDE_PROJECT_DIR")
+    if env_dir:
+        return Path(env_dir)
+
     try:
         result = subprocess.run(
             ["git", "rev-parse", "--show-toplevel"],
@@ -32,9 +37,9 @@ def get_repo_root() -> Path:
         return Path.cwd()
 
 
-def is_tdd_enabled(repo_root: Path) -> bool:
+def is_tdd_enabled(project_dir: Path) -> bool:
     """Check if TDD enforcement is enabled."""
-    project_claude = repo_root / "project" / "CLAUDE.md"
+    project_claude = project_dir / "project" / "CLAUDE.md"
     if not project_claude.exists():
         return False
 
@@ -46,9 +51,9 @@ def is_tdd_enabled(repo_root: Path) -> bool:
         return False
 
 
-def get_index_status(repo_root: Path) -> str:
+def get_index_status(project_dir: Path) -> str:
     """Check if codebase index exists and is recent."""
-    index_path = repo_root / "saddle" / "index" / "CODEBASE.md"
+    index_path = project_dir / "saddle" / "index" / "CODEBASE.md"
     if index_path.exists():
         return "available"
     return "not found"
@@ -62,9 +67,9 @@ def main() -> int:
     except json.JSONDecodeError:
         return 0
 
-    repo_root = get_repo_root()
-    tdd_enabled = is_tdd_enabled(repo_root)
-    index_status = get_index_status(repo_root)
+    project_dir = get_project_dir()
+    tdd_enabled = is_tdd_enabled(project_dir)
+    index_status = get_index_status(project_dir)
 
     # Build requirements message to inject into context
     requirements = []
@@ -95,8 +100,14 @@ def main() -> int:
     )
     requirements.append("- Run 'pytest project/tests/' before committing")
 
-    # Output to stdout - this gets injected into Claude's context
-    print("\n".join(requirements))
+    # Output structured JSON
+    output = {
+        "hookSpecificOutput": {
+            "hookEventName": "UserPromptSubmit",
+            "additionalContext": "\n".join(requirements),
+        }
+    }
+    print(json.dumps(output))
 
     return 0
 

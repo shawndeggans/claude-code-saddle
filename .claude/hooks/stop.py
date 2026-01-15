@@ -18,14 +18,20 @@ Output:
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 
 
-def get_repo_root() -> Path:
-    """Get the repository root directory."""
+def get_project_dir() -> Path:
+    """Get the project directory from environment or git."""
+    env_dir = os.environ.get("CLAUDE_PROJECT_DIR")
+    if env_dir:
+        return Path(env_dir)
+
     try:
         result = subprocess.run(
             ["git", "rev-parse", "--show-toplevel"],
@@ -38,9 +44,9 @@ def get_repo_root() -> Path:
         return Path.cwd()
 
 
-def is_tdd_enabled(repo_root: Path) -> bool:
+def is_tdd_enabled(project_dir: Path) -> bool:
     """Check if TDD enforcement is enabled."""
-    project_claude = repo_root / "project" / "CLAUDE.md"
+    project_claude = project_dir / "project" / "CLAUDE.md"
     if not project_claude.exists():
         return False
 
@@ -52,9 +58,9 @@ def is_tdd_enabled(repo_root: Path) -> bool:
         return False
 
 
-def has_test_files(repo_root: Path) -> bool:
+def has_test_files(project_dir: Path) -> bool:
     """Check if there are any test files to run."""
-    test_dir = repo_root / "project" / "tests"
+    test_dir = project_dir / "project" / "tests"
     if not test_dir.exists():
         return False
 
@@ -63,16 +69,75 @@ def has_test_files(repo_root: Path) -> bool:
     return len(test_files) > 0
 
 
-def run_tests(repo_root: Path) -> tuple[bool, str]:
+def update_context_snapshot(project_dir: Path) -> None:
+    """Update context snapshot with current session state."""
+    snapshot_path = project_dir / "saddle" / "sessions" / "context-snapshot.md"
+
+    try:
+        # Get recent git activity
+        git_log = subprocess.run(
+            ["git", "log", "--oneline", "-5"],
+            capture_output=True,
+            text=True,
+            cwd=str(project_dir),
+        ).stdout.strip()
+
+        git_diff = subprocess.run(
+            ["git", "diff", "--stat", "HEAD~3..HEAD"],
+            capture_output=True,
+            text=True,
+            cwd=str(project_dir),
+        ).stdout.strip()
+
+        git_status = subprocess.run(
+            ["git", "status", "--short"],
+            capture_output=True,
+            text=True,
+            cwd=str(project_dir),
+        ).stdout.strip()
+
+        # Build snapshot
+        snapshot = f"""# Context Snapshot
+Auto-generated: {datetime.now().strftime("%Y-%m-%d %H:%M")}
+
+## Recent Commits
+```
+{git_log}
+```
+
+## Recent Changes
+```
+{git_diff if git_diff else "(no recent changes)"}
+```
+
+## Uncommitted Work
+```
+{git_status if git_status else "(clean)"}
+```
+
+## Session Notes
+(Add manual notes here if needed)
+
+"""
+
+        # Write snapshot
+        snapshot_path.parent.mkdir(parents=True, exist_ok=True)
+        snapshot_path.write_text(snapshot, encoding="utf-8")
+
+    except (subprocess.SubprocessError, OSError):
+        pass  # Silently ignore snapshot failures
+
+
+def run_tests(project_dir: Path) -> tuple[bool, str]:
     """Run pytest and return (passed, output)."""
-    test_dir = repo_root / "project" / "tests"
+    test_dir = project_dir / "project" / "tests"
 
     try:
         result = subprocess.run(
             ["pytest", str(test_dir), "-v", "--tb=short"],
             capture_output=True,
             text=True,
-            cwd=str(repo_root),
+            cwd=str(project_dir),
             timeout=60,
         )
         output = result.stdout + result.stderr
@@ -103,18 +168,21 @@ def main() -> int:
     if payload.get("stop_hook_active"):
         return 0
 
-    repo_root = get_repo_root()
+    project_dir = get_project_dir()
+
+    # Update context snapshot on clean exit
+    update_context_snapshot(project_dir)
 
     # Only run test verification when TDD is enabled
-    if not is_tdd_enabled(repo_root):
+    if not is_tdd_enabled(project_dir):
         return 0
 
     # Skip if no test files exist
-    if not has_test_files(repo_root):
+    if not has_test_files(project_dir):
         return 0
 
     # Run tests
-    passed, output = run_tests(repo_root)
+    passed, output = run_tests(project_dir)
 
     if not passed:
         # Block completion - tests are failing

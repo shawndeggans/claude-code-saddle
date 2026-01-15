@@ -1,6 +1,10 @@
 # Claude local configuration
 CLAUDE.local.md
 
+# Saddle session files (context snapshots are machine-specific)
+saddle/sessions/
+.session-log.txt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
